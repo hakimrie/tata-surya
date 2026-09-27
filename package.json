@@ -1,0 +1,33 @@
+{
+  "name": "tata-surya",
+  "version": "1.0.0",
+  "description": "3D Solar System & Gravity Sandbox Educational Application",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "solar-system",
+    "astronomy",
+    "physics",
+    "threejs",
+    "rk4",
+    "kepler",
+    "gravity-sandbox",
+    "indonesia"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}
