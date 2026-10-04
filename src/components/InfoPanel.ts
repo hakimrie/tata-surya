@@ -1,5 +1,6 @@
 import { PlanetData, CurriculumLevel } from '../data/planets';
 import { MoonData, getMoonsByPlanetId } from '../data/moons';
+import { CometData } from '../data/comets';
 import { UnitConverter, UnitSystem } from '../utils/units';
 import { formatEnergy, formatGravity, formatTemperature, formatNumberId } from '../utils/formatting';
 import { Body } from '../physics/Body';
@@ -10,6 +11,7 @@ export class InfoPanel {
   public container: HTMLElement;
   private currentPlanet: PlanetData | null = null;
   private currentMoon: MoonData | null = null;
+  private currentComet: CometData | null = null;
   private activeTab: 'overview' | 'physical' | 'orbit' | 'atmosphere' | 'moons' | 'energy' = 'overview';
 
   public curriculumLevel: CurriculumLevel = 'smp';
@@ -32,6 +34,7 @@ export class InfoPanel {
   showPlanet(planet: PlanetData, level: CurriculumLevel, units: UnitSystem): void {
     this.currentPlanet = planet;
     this.currentMoon = null;
+    this.currentComet = null;
     this.curriculumLevel = level;
     this.unitSystem = units;
     this.container.classList.remove('hidden');
@@ -41,6 +44,17 @@ export class InfoPanel {
   showMoon(moon: MoonData, level: CurriculumLevel, units: UnitSystem): void {
     this.currentMoon = moon;
     this.currentPlanet = null;
+    this.currentComet = null;
+    this.curriculumLevel = level;
+    this.unitSystem = units;
+    this.container.classList.remove('hidden');
+    this.render();
+  }
+
+  showComet(comet: CometData, level: CurriculumLevel, units: UnitSystem): void {
+    this.currentComet = comet;
+    this.currentPlanet = null;
+    this.currentMoon = null;
     this.curriculumLevel = level;
     this.unitSystem = units;
     this.container.classList.remove('hidden');
@@ -51,6 +65,7 @@ export class InfoPanel {
     this.container.classList.add('hidden');
     this.currentPlanet = null;
     this.currentMoon = null;
+    this.currentComet = null;
     if (this.onClose) this.onClose();
   }
 
@@ -101,7 +116,85 @@ export class InfoPanel {
       this.renderMoon(this.currentMoon);
     } else if (this.currentPlanet) {
       this.renderPlanet(this.currentPlanet);
+    } else if (this.currentComet) {
+      this.renderComet(this.currentComet);
     }
+  }
+
+  private renderComet(c: CometData): void {
+    const isEn = getLanguage() === 'en';
+    const tr = t();
+
+    const typeLabel = isEn ? '☄️ Periodic Comet' : '☄️ Komet Periodik';
+    const primaryTitle = isEn ? c.englishName : c.indonesianName;
+    const secondaryTitle = isEn ? `${c.indonesianName} (Eccentricity e = ${c.eccentricity})` : `${c.englishName} (Eksentrisitas e = ${c.eccentricity})`;
+    const overviewText = isEn ? c.overviewEn : c.overview;
+    const funFactText = isEn ? c.funFactEn : c.funFact;
+
+    this.container.innerHTML = `
+      <div class="panel-header">
+        <div class="header-titles">
+          <div class="header-badges">
+            <span class="badge badge-type">${typeLabel}</span>
+            <span class="badge badge-curriculum">${tr.levelPrefix}: ${this.curriculumLevel.toUpperCase()}</span>
+          </div>
+          <h2 class="planet-title">${primaryTitle}</h2>
+          <span class="planet-subtitle">${secondaryTitle}</span>
+        </div>
+        <button class="btn-close" id="btn-close-info" title="Close Panel" aria-label="Close Panel">&times;</button>
+      </div>
+
+      <div class="panel-actions">
+        <button class="btn-action" id="btn-focus" title="${tr.btnFocus}">
+          <span class="action-icon">🎯</span> ${tr.btnFocus}
+        </button>
+        <button class="btn-action" id="btn-follow" title="${tr.btnFollow}">
+          <span class="action-icon">🛰️</span> ${tr.btnFollow}
+        </button>
+      </div>
+
+      <div class="tab-content-container">
+        <div class="tab-pane active">
+          <p class="overview-text">${overviewText}</p>
+          <div class="data-grid">
+            <div class="data-card">
+              <span class="data-label">${isEn ? 'Perihelion (Closest to Sun)' : 'Perihelion (Terdekat)'}</span>
+              <span class="data-value">${c.perihelionAU} AU</span>
+            </div>
+            <div class="data-card">
+              <span class="data-label">${tr.labelSemiMajorAxis}</span>
+              <span class="data-value">${c.semiMajorAxisAU} AU</span>
+            </div>
+            <div class="data-card">
+              <span class="data-label">${tr.labelEccentricity}</span>
+              <span class="data-value">${c.eccentricity} (${isEn ? 'Hyper-elongated' : 'Sangat Elips'})</span>
+            </div>
+            <div class="data-card">
+              <span class="data-label">${tr.labelOrbitalPeriod}</span>
+              <span class="data-value">${c.orbitalPeriodYears} ${isEn ? 'years' : 'tahun'}</span>
+            </div>
+            <div class="data-card">
+              <span class="data-label">${tr.labelInclination}</span>
+              <span class="data-value">${c.inclinationDeg}° ${c.inclinationDeg > 90 ? (isEn ? '(Retrograde)' : '(Retrograd)') : ''}</span>
+            </div>
+            <div class="data-card">
+              <span class="data-label">${isEn ? 'Nucleus Radius' : 'Radius Inti Komet'}</span>
+              <span class="data-value">~${c.nucleusRadiusKm} km</span>
+            </div>
+          </div>
+
+          <div class="funfact-box">
+            <span class="funfact-icon">💡</span>
+            <div>
+              <strong>${tr.didYouKnowTitle}</strong>
+              <p>${funFactText}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.attachEvents(c.id);
   }
 
   private renderPlanet(p: PlanetData): void {

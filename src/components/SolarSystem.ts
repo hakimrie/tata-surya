@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { Planet } from './Planet';
 import { Moon } from './Moon';
+import { Comet } from './Comet';
+import { COMETS_DATA } from '../data/comets';
+import { Constellations } from './Constellations';
+import { SpacecraftMissions } from './SpacecraftMissions';
+import { SolarAtmosphere } from '../effects/SolarAtmosphere';
+import { BlackHole } from './BlackHole';
 import { PLANETS_DATA, PlanetData } from '../data/planets';
 import { MOONS_DATA, MoonData } from '../data/moons';
 import { GravityEngine } from '../physics/GravityEngine';
@@ -34,10 +40,16 @@ export class SolarSystem {
   public group: THREE.Group;
   public planets: Map<string, Planet> = new Map();
   public moons: Map<string, Moon> = new Map();
+  public comets: Map<string, Comet> = new Map();
   public majorAsteroids: MajorAsteroidItem[] = [];
   public orbitLinesGroup: THREE.Group;
   public asteroidBeltGroup: THREE.Group;
   public gravityFieldGroup: THREE.Group;
+  public cometsGroup: THREE.Group;
+  public constellations: Constellations;
+  public spacecraftMissions: SpacecraftMissions;
+  public solarAtmosphere?: SolarAtmosphere;
+  public blackHole?: BlackHole;
 
   public scaleConfig: ScaleConfig;
   public isScaleExaggerated: boolean = true;
@@ -47,6 +59,9 @@ export class SolarSystem {
   public showAsteroidBelt: boolean = true;
   public showGravityField: boolean = false;
   public showVelocityVectors: boolean = false;
+  public showComets: boolean = true;
+  public showConstellations: boolean = true;
+  public showSpacecraft: boolean = true;
 
   private selectedBodyId: string | null = null;
 
@@ -55,10 +70,12 @@ export class SolarSystem {
     this.orbitLinesGroup = new THREE.Group();
     this.asteroidBeltGroup = new THREE.Group();
     this.gravityFieldGroup = new THREE.Group();
+    this.cometsGroup = new THREE.Group();
 
     this.group.add(this.orbitLinesGroup);
     this.group.add(this.asteroidBeltGroup);
     this.group.add(this.gravityFieldGroup);
+    this.group.add(this.cometsGroup);
 
     // Default to Visual Educational Scale
     this.scaleConfig = {
@@ -70,15 +87,24 @@ export class SolarSystem {
       moonOrbitScale: 18
     };
 
+    // Celestial Dome Constellations
+    this.constellations = new Constellations();
+    this.group.add(this.constellations.group);
+
+    // Historic Spacecraft Missions
+    this.spacecraftMissions = new SpacecraftMissions(this.scaleConfig.distanceScale);
+    this.group.add(this.spacecraftMissions.group);
+
     this.createPlanets();
     this.createMoons();
+    this.createComets();
     this.createAsteroidBelt();
     this.createOrbitLines();
     this.createGravityFieldGrid();
   }
 
   /**
-   * Initialize all planets
+   * Initialize all planets and dynamic solar atmosphere
    */
   private createPlanets(): void {
     for (const pData of PLANETS_DATA) {
@@ -86,6 +112,23 @@ export class SolarSystem {
       const planet = new Planet(pData, visualRadius);
       this.planets.set(pData.id, planet);
       this.group.add(planet.group);
+
+      if (pData.type === 'star') {
+        this.solarAtmosphere = new SolarAtmosphere(visualRadius);
+        planet.group.add(this.solarAtmosphere.group);
+      }
+    }
+  }
+
+  /**
+   * Initialize comets with dynamic dual tails (Halley, NEOWISE)
+   */
+  private createComets(): void {
+    for (const cData of COMETS_DATA) {
+      const comet = new Comet(cData, this.scaleConfig.distanceScale);
+      this.comets.set(cData.id, comet);
+      this.cometsGroup.add(comet.group);
+      this.cometsGroup.add(comet.orbitLine);
     }
   }
 
@@ -344,6 +387,9 @@ export class SolarSystem {
 
     // Refresh meshes, orbits, and asteroid belt
     this.updateMeshScales();
+    for (const comet of this.comets.values()) {
+      comet.updateDistanceScale(this.scaleConfig.distanceScale);
+    }
     this.createOrbitLines();
     this.recreateAsteroidBelt();
   }
@@ -494,7 +540,12 @@ export class SolarSystem {
   /**
    * Sync visual 3D positions each frame with physics simulation engine
    */
-  syncWithPhysics(engine: GravityEngine, deltaRealSec: number, isSimPaused: boolean = false): void {
+  syncWithPhysics(
+    engine: GravityEngine,
+    deltaRealSec: number,
+    isSimPaused: boolean = false,
+    deltaSimSeconds: number = deltaRealSec * 86400
+  ): void {
     const distScale = this.scaleConfig.distanceScale;
 
     for (const body of engine.getActiveBodies()) {
@@ -564,6 +615,68 @@ export class SolarSystem {
         ast.mesh.rotation.y += 0.018;
       }
     }
+
+    // Update dynamic solar atmosphere (prominence loops & solar wind)
+    if (this.solarAtmosphere) {
+      this.solarAtmosphere.update(deltaRealSec, isSimPaused);
+    }
+
+    // Update dynamic comets with dual tails
+    if (this.cometsGroup.visible) {
+      for (const comet of this.comets.values()) {
+        comet.update(deltaRealSec, isSimPaused, deltaSimSeconds);
+      }
+    }
+
+    // Update historic spacecraft (JWST & Palapa tracking Earth)
+    if (this.spacecraftMissions.group.visible) {
+      const earth = this.planets.get('earth');
+      this.spacecraftMissions.update(deltaRealSec, earth ? earth.group.position : undefined);
+    }
+
+    // Update Black Hole if present in sandbox
+    if (this.blackHole) {
+      this.blackHole.update(deltaRealSec);
+    }
+  }
+
+  /**
+   * Set comets visibility
+   */
+  public setCometsVisible(visible: boolean): void {
+    this.showComets = visible;
+    this.cometsGroup.visible = visible;
+    for (const c of this.comets.values()) {
+      c.orbitLine.visible = visible && this.showOrbitPaths;
+    }
+  }
+
+  /**
+   * Set constellations sky dome visibility
+   */
+  public setConstellationsVisible(visible: boolean): void {
+    this.showConstellations = visible;
+    this.constellations.setVisible(visible);
+  }
+
+  /**
+   * Set spacecraft missions visibility
+   */
+  public setSpacecraftVisible(visible: boolean): void {
+    this.showSpacecraft = visible;
+    this.spacecraftMissions.setVisible(visible);
+  }
+
+  /**
+   * Add Black Hole into Solar System scene
+   */
+  public addBlackHole(position: THREE.Vector3): BlackHole {
+    if (!this.blackHole) {
+      this.blackHole = new BlackHole(1.4);
+      this.group.add(this.blackHole.group);
+    }
+    this.blackHole.group.position.copy(position);
+    return this.blackHole;
   }
 
   /**
@@ -578,6 +691,9 @@ export class SolarSystem {
     for (const moon of this.moons.values()) {
       moon.setSelected(moon.data.id === id, isCloseUp);
     }
+    for (const comet of this.comets.values()) {
+      comet.setSelected(comet.data.id === id, isCloseUp);
+    }
   }
 
   getSelectedBodyId(): string | null {
@@ -585,9 +701,9 @@ export class SolarSystem {
   }
 
   /**
-   * Raycast from mouse coordinates to pick planet or moon
+   * Raycast from mouse coordinates to pick planet, moon, or comet
    */
-  raycast(raycaster: THREE.Raycaster): { id: string; type: 'planet' | 'moon'; object: THREE.Object3D } | null {
+  raycast(raycaster: THREE.Raycaster): { id: string; type: 'planet' | 'moon' | 'comet'; object: THREE.Object3D } | null {
     // Check planets first
     const planetMeshes: THREE.Mesh[] = [];
     for (const p of this.planets.values()) {
@@ -614,6 +730,23 @@ export class SolarSystem {
       for (const m of this.moons.values()) {
         if (m.bodyMesh === hit) {
           return { id: m.data.id, type: 'moon', object: m.group };
+        }
+      }
+    }
+
+    // Check comets
+    if (this.cometsGroup.visible) {
+      const cometMeshes: THREE.Mesh[] = [];
+      for (const c of this.comets.values()) {
+        cometMeshes.push(c.nucleusMesh);
+      }
+      const cometIntersects = raycaster.intersectObjects(cometMeshes, false);
+      if (cometIntersects.length > 0) {
+        const hit = cometIntersects[0].object;
+        for (const c of this.comets.values()) {
+          if (c.nucleusMesh === hit) {
+            return { id: c.data.id, type: 'comet', object: c.group };
+          }
         }
       }
     }

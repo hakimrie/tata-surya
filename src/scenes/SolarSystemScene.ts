@@ -29,7 +29,7 @@ export class SolarSystemScene {
   private lastTime = 0;
 
   // Callback on object clicked
-  public onSelectObject?: (id: string, type: 'planet' | 'moon') => void;
+  public onSelectObject?: (id: string, type: 'planet' | 'moon' | 'comet') => void;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -240,6 +240,14 @@ export class SolarSystemScene {
       const radius = moon.visualRadius || 0.12;
       this.cameraController.focusOnObject(moon.group, radius, false, 0);
       this.updateFocusedLight(moon.group, radius * 1.5, false, 0);
+      return;
+    }
+
+    const comet = this.solarSystem.comets.get(id);
+    if (comet) {
+      const radius = comet.visualRadius || 0.22;
+      this.cameraController.focusOnObject(comet.group, radius * 3.5, false, 0);
+      this.updateFocusedLight(comet.group, radius * 3.0, false, 0);
     }
   }
 
@@ -261,6 +269,14 @@ export class SolarSystemScene {
       this.cameraController.viewFromSurface(planet.group, radius);
       this.disableFocusedLight();
     }
+  }
+
+  /**
+   * View entire celestial dome and constellations
+   */
+  viewSkyDome(): void {
+    this.cameraController.setConstellationOverview();
+    this.disableFocusedLight();
   }
 
   /**

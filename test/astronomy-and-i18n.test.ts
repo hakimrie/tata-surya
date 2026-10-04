@@ -3,6 +3,11 @@ import { PLANETS_DATA, getPlanetById } from '../src/data/planets';
 import { MOONS_DATA, getMoonsByPlanetId } from '../src/data/moons';
 import { INDONESIA_SPACE_ARTICLES, QUIZ_QUESTIONS } from '../src/data/indonesiaSpace';
 import { setLanguage, getLanguage, t } from '../src/utils/i18n';
+import { COMETS_DATA, getCometById } from '../src/data/comets';
+import { Comet } from '../src/components/Comet';
+import { CONSTELLATIONS_DATA } from '../src/components/Constellations';
+import { AtmosphereGlow } from '../src/effects/AtmosphereGlow';
+import { EXPERIMENTS, getExperimentById } from '../src/data/experiments';
 
 describe('Planetary Configuration Verification', () => {
   it('only Saturn has prominent rings enabled', () => {
@@ -186,5 +191,170 @@ describe('Moon Orbit Scaling & Collision Prevention', () => {
     // Planetary clearance guard must clamp orbit so clearance is still maintained
     const clearanceToVenus = earthVenusGap - moonOrbitR - venusVisualR - moonVisualR;
     expect(clearanceToVenus).toBeGreaterThan(0.1);
+  });
+});
+
+describe('Cometary Orbital Dynamics & Scientific Accuracy', () => {
+  it('loads periodic and long-period comets with realistic orbital elements', () => {
+    expect(COMETS_DATA.length).toBeGreaterThanOrEqual(2);
+
+    const halley = getCometById('halley');
+    expect(halley).toBeDefined();
+    // Halley has retrograde orbit (i > 90 deg)
+    expect(halley?.inclinationDeg).toBeGreaterThan(90);
+    expect(halley?.inclinationDeg).toBeCloseTo(162.26, 1);
+    // Halley has high eccentricity e > 0.95
+    expect(halley?.eccentricity).toBeGreaterThan(0.95);
+    // Perihelion is inside Earth's orbit (~0.586 AU)
+    expect(halley?.perihelionAU).toBeLessThan(1.0);
+
+    const neowise = getCometById('neowise');
+    expect(neowise).toBeDefined();
+    // NEOWISE has extreme near-parabolic eccentricity e > 0.999
+    expect(neowise?.eccentricity).toBeGreaterThan(0.999);
+    // Swings very close to the Sun, inside Mercury's perihelion (~0.295 AU)
+    expect(neowise?.perihelionAU).toBeLessThan(0.387);
+  });
+
+  it('provides bilingual educational overviews and fun facts for all comets', () => {
+    for (const c of COMETS_DATA) {
+      expect(c.name).toBeTruthy();
+      expect(c.indonesianName).toBeTruthy();
+      expect(c.englishName).toBeTruthy();
+      expect(c.overview).toBeTruthy();
+      expect(c.overviewEn).toBeTruthy();
+      expect(c.funFact).toBeTruthy();
+      expect(c.funFactEn).toBeTruthy();
+      expect(c.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+  });
+
+  it('instantiates 3D Comet with dual tail buffers and Keplerian solver', () => {
+    const halleyData = getCometById('halley')!;
+    const distanceScale = 1.0;
+    const comet = new Comet(halleyData, distanceScale);
+
+    expect(comet.group).toBeDefined();
+    expect(comet.orbitLine).toBeDefined();
+    expect(comet.ionTail).toBeDefined();
+    expect(comet.dustTail).toBeDefined();
+
+    // Verify static buffer geometries: Ion tail has 6 floats (2 points), dust tail has 60 floats (20 points)
+    const ionPos = comet.ionTail.geometry.attributes.position;
+    const dustPos = comet.dustTail.geometry.attributes.position;
+    expect(ionPos.count).toBe(2);
+    expect(dustPos.count).toBe(20);
+
+    // Initial position should be finite
+    expect(Number.isFinite(comet.group.position.x)).toBe(true);
+    expect(Number.isFinite(comet.group.position.y)).toBe(true);
+    expect(Number.isFinite(comet.group.position.z)).toBe(true);
+
+    const initialM = comet.meanAnomaly;
+
+    // When paused, mean anomaly does not advance
+    comet.update(0.016, true, 0);
+    expect(comet.meanAnomaly).toBe(initialM);
+
+    // When running with simulation time, mean anomaly advances smoothly
+    comet.update(0.016, false, 86400); // 1 sim day
+    expect(comet.meanAnomaly).toBeGreaterThan(initialM);
+
+    // Position updates smoothly without NaN
+    expect(Number.isFinite(comet.group.position.x)).toBe(true);
+    expect(Number.isFinite(comet.group.position.y)).toBe(true);
+    expect(Number.isFinite(comet.group.position.z)).toBe(true);
+  });
+});
+
+describe('Celestial Constellations & Nusantara Maritime Navigation', () => {
+  it('includes Western constellations and Indonesian indigenous asterisms', () => {
+    const ids = CONSTELLATIONS_DATA.map(c => c.id);
+    expect(ids).toContain('crux');
+    expect(ids).toContain('orion');
+    expect(ids).toContain('ursa-major');
+    expect(ids).toContain('cassiopeia');
+    expect(ids).toContain('scorpius');
+    expect(ids).toContain('cygnus');
+
+    const crux = CONSTELLATIONS_DATA.find(c => c.id === 'crux');
+    expect(crux?.indigenousName).toBe('Bintang Pari / Gubuk Penceng');
+    expect(crux?.indigenousDescription).toContain('Selatan');
+
+    const orion = CONSTELLATIONS_DATA.find(c => c.id === 'orion');
+    expect(orion?.indigenousName).toBe('Bintang Waluku / Bajak');
+    expect(orion?.indigenousDescription).toContain('tanam padi');
+  });
+
+  it('has valid star coordinates and line vertex indices for each constellation', () => {
+    for (const c of CONSTELLATIONS_DATA) {
+      expect(c.stars.length).toBeGreaterThan(0);
+      expect(c.lines.length).toBeGreaterThan(0);
+
+      // Verify all lines connect valid star indices
+      for (const [s1, s2] of c.lines) {
+        expect(s1).toBeGreaterThanOrEqual(0);
+        expect(s1).toBeLessThan(c.stars.length);
+        expect(s2).toBeGreaterThanOrEqual(0);
+        expect(s2).toBeLessThan(c.stars.length);
+      }
+    }
+  });
+});
+
+describe('Atmosphere Limb Glow Rayleigh Presets', () => {
+  it('defines physically-scaled atmosphere presets for major planets', () => {
+    const presets = AtmosphereGlow.PRESETS;
+    expect(presets.earth).toBeDefined();
+    expect(presets.venus).toBeDefined();
+    expect(presets.mars).toBeDefined();
+    expect(presets.titan).toBeDefined();
+
+    for (const [, preset] of Object.entries(presets)) {
+      expect(preset.coefficient).toBeGreaterThan(1.0);
+      expect(preset.coefficient).toBeLessThan(1.25);
+      expect(preset.power).toBeGreaterThan(0);
+      expect(preset.intensity).toBeGreaterThan(0);
+      expect(preset.color).toBeDefined();
+    }
+  });
+});
+
+describe('Rogue Black Hole Relativistic Encounter Experiment', () => {
+  it('registers Experiment 9 with complete interactive parameters', () => {
+    const exp = getExperimentById('black-hole-encounter');
+    expect(exp).toBeDefined();
+    expect(exp?.title).toContain('Lubang Hitam');
+    expect(exp?.titleEn).toContain('Black Hole');
+    expect(exp?.predictionQuestion.question).toBeTruthy();
+    expect(exp?.predictionQuestion.options.some(o => o.isCorrect)).toBe(true);
+
+    const sliderIds = exp?.sliders.map(s => s.id);
+    expect(sliderIds).toContain('blackHoleMass');
+    expect(sliderIds).toContain('encounterDist');
+    expect(sliderIds).toContain('flybySpeed');
+
+    // Mass range allows simulating stellar black holes
+    const massSlider = exp?.sliders.find(s => s.id === 'blackHoleMass')!;
+    expect(massSlider.min).toBeLessThanOrEqual(3.0);
+    expect(massSlider.max).toBeGreaterThanOrEqual(5.0);
+  });
+});
+
+describe('Advanced Experience UI Internationalization Keys', () => {
+  it('has localized translation keys for Cinematic Tour, Scale Theater, Comets, Constellations, and Audio', () => {
+    for (const lang of ['id', 'en'] as const) {
+      setLanguage(lang);
+      const dict = t();
+      expect(dict.navTour).toBeTruthy();
+      expect(dict.navScaleTheater).toBeTruthy();
+      expect(dict.btnSnapshot).toBeTruthy();
+      expect(dict.btnAudio).toBeTruthy();
+      expect(dict.toggleConstellations).toBeTruthy();
+      expect(dict.toggleComets).toBeTruthy();
+      expect(dict.toggleSpacecraft).toBeTruthy();
+      expect(dict.toggleSkyDomeView).toBeTruthy();
+    }
+    setLanguage('id');
   });
 });

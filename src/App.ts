@@ -18,6 +18,11 @@ import { ExperimentPanel } from './components/ExperimentPanel';
 import { IndonesiaSpacePanel } from './components/IndonesiaSpacePanel';
 import { SearchExplorer, SearchResult } from './components/SearchExplorer';
 import { WelcomeModal } from './components/WelcomeModal';
+import { CosmicAudio } from './audio/CosmicAudio';
+import { CinematicTour } from './components/CinematicTour';
+import { PlanetComparisonStage } from './components/PlanetComparisonStage';
+import { SnapshotStudio } from './components/SnapshotStudio';
+import { COMETS_DATA, getCometById } from './data/comets';
 
 export class App {
   private container: HTMLElement;
@@ -35,12 +40,20 @@ export class App {
   private searchExplorer: SearchExplorer;
   private welcomeModal: WelcomeModal;
 
+  // WOW Experiential Features
+  public audio: CosmicAudio;
+  public cinematicTour: CinematicTour;
+  public comparisonStage: PlanetComparisonStage;
+
   // Global Settings
   private curriculumLevel: CurriculumLevel = 'smp';
   private unitSystem: UnitSystem = 'student';
 
   constructor(container: HTMLElement) {
     this.container = container;
+
+    // 0. Audio Synthesizer
+    this.audio = CosmicAudio.getInstance();
 
     // 1. Create 3D Scene
     const canvasContainer = document.createElement('div');
@@ -62,6 +75,8 @@ export class App {
     this.indonesiaPanel = new IndonesiaSpacePanel();
     this.searchExplorer = new SearchExplorer();
     this.welcomeModal = new WelcomeModal();
+    this.cinematicTour = new CinematicTour(this.scene);
+    this.comparisonStage = new PlanetComparisonStage();
 
     this.buildHeaderUI();
     this.buildViewTogglesUI();
@@ -74,7 +89,9 @@ export class App {
     this.container.appendChild(this.keplerLab.container);
     this.container.appendChild(this.experimentPanel.container);
     this.container.appendChild(this.indonesiaPanel.container);
+    this.container.appendChild(this.comparisonStage.container);
     this.container.appendChild(this.welcomeModal.container);
+    this.container.appendChild(this.cinematicTour.container);
 
     this.wireEvents();
 
@@ -205,6 +222,12 @@ export class App {
         <button class="nav-btn active" id="nav-solar" title="${tr.navSolar}">
           ${tr.navSolar}
         </button>
+        <button class="nav-btn nav-btn-glow" id="nav-tour" title="${tr.navTour}">
+          ${tr.navTour}
+        </button>
+        <button class="nav-btn" id="nav-theater" title="${tr.navScaleTheater}">
+          ${tr.navScaleTheater}
+        </button>
         <button class="nav-btn" id="nav-kepler" title="${tr.navKepler}">
           ${tr.navKepler}
         </button>
@@ -219,8 +242,19 @@ export class App {
         </button>
       </nav>
 
-      <!-- Global Settings & Level Switcher -->
+      <!-- Global Settings, Tools & Level Switcher -->
       <div class="header-settings">
+        <!-- Audio Synthesizer Button -->
+        <button class="nav-btn nav-btn-audio ${!this.audio.isMuted ? 'active' : ''}" id="btn-audio-toggle" title="${tr.btnAudio}">
+          <span class="audio-icon">${this.audio.isMuted ? '🔇' : '🔊'}</span>
+          <span class="audio-label">${tr.btnAudio}</span>
+        </button>
+
+        <!-- 4K Snapshot Exporter -->
+        <button class="nav-btn" id="btn-snapshot" title="${tr.btnSnapshot}">
+          ${tr.btnSnapshot}
+        </button>
+
         <!-- Language Switcher -->
         <div class="lang-switch-wrapper" title="Ganti Bahasa / Switch Language">
           <button class="lang-toggle-btn ${!isEn ? 'active' : ''}" id="btn-lang-id" data-lang="id">
@@ -280,14 +314,29 @@ export class App {
         <span id="label-toggle-asteroids">${tr.toggleAsteroids}</span>
       </label>
       <label class="toggle-item">
+        <input type="checkbox" id="toggle-comets" checked>
+        <span id="label-toggle-comets">${tr.toggleComets}</span>
+      </label>
+      <label class="toggle-item">
+        <input type="checkbox" id="toggle-constellations" checked>
+        <span id="label-toggle-constellations">${tr.toggleConstellations}</span>
+      </label>
+      <label class="toggle-item">
+        <input type="checkbox" id="toggle-spacecraft">
+        <span id="label-toggle-spacecraft">${tr.toggleSpacecraft}</span>
+      </label>
+      <label class="toggle-item">
         <input type="checkbox" id="toggle-gravity-field">
         <span id="label-toggle-gravity">${tr.toggleGravityField}</span>
       </label>
-      <label class="toggle-item">
-        <button class="btn-ctrl" id="btn-camera-top" style="padding: 2px 6px; font-size: 10px; width: 100%;">
+      <div style="display: flex; gap: 4px; margin-top: 5px;">
+        <button class="btn-ctrl" id="btn-camera-top" style="flex: 1; padding: 3px 4px; font-size: 10px;">
           ${tr.toggleTopView}
         </button>
-      </label>
+        <button class="btn-ctrl" id="btn-camera-dome" style="flex: 1; padding: 3px 4px; font-size: 10px;">
+          ${tr.toggleSkyDomeView}
+        </button>
+      </div>
     `;
 
     this.container.appendChild(viewToggles);
@@ -295,8 +344,12 @@ export class App {
     // Attach toggle listeners
     const orbitCb = viewToggles.querySelector('#toggle-orbits') as HTMLInputElement;
     const astCb = viewToggles.querySelector('#toggle-asteroids') as HTMLInputElement;
+    const comCb = viewToggles.querySelector('#toggle-comets') as HTMLInputElement;
+    const conCb = viewToggles.querySelector('#toggle-constellations') as HTMLInputElement;
+    const spcCb = viewToggles.querySelector('#toggle-spacecraft') as HTMLInputElement;
     const gravCb = viewToggles.querySelector('#toggle-gravity-field') as HTMLInputElement;
     const topBtn = viewToggles.querySelector('#btn-camera-top');
+    const domeBtn = viewToggles.querySelector('#btn-camera-dome');
 
     if (orbitCb) {
       orbitCb.addEventListener('change', () => {
@@ -310,6 +363,24 @@ export class App {
       });
     }
 
+    if (comCb) {
+      comCb.addEventListener('change', () => {
+        this.scene.solarSystem.setCometsVisible(comCb.checked);
+      });
+    }
+
+    if (conCb) {
+      conCb.addEventListener('change', () => {
+        this.scene.solarSystem.setConstellationsVisible(conCb.checked);
+      });
+    }
+
+    if (spcCb) {
+      spcCb.addEventListener('change', () => {
+        this.scene.solarSystem.setSpacecraftVisible(spcCb.checked);
+      });
+    }
+
     if (gravCb) {
       gravCb.addEventListener('change', () => {
         this.scene.solarSystem.gravityFieldGroup.visible = gravCb.checked;
@@ -319,6 +390,17 @@ export class App {
     if (topBtn) {
       topBtn.addEventListener('click', () => {
         this.scene.cameraController.setEclipticTopView();
+      });
+    }
+
+    if (domeBtn) {
+      domeBtn.addEventListener('click', () => {
+        this.audio.playUiClick();
+        if (conCb && !conCb.checked) {
+          conCb.checked = true;
+          this.scene.solarSystem.setConstellationsVisible(true);
+        }
+        this.scene.viewSkyDome();
       });
     }
   }
@@ -351,18 +433,26 @@ export class App {
     if (navAllExpLink) navAllExpLink.title = tr.navAllExperimentsTitle;
 
     const navSolar = document.querySelector('#nav-solar');
+    const navTour = document.querySelector('#nav-tour');
+    const navTheater = document.querySelector('#nav-theater');
     const navKepler = document.querySelector('#nav-kepler');
     const navExp = document.querySelector('#nav-exp');
     const navId = document.querySelector('#nav-id');
     const navQuiz = document.querySelector('#nav-quiz');
     const helpBtn = document.querySelector('#btn-help-guide');
+    const snapBtn = document.querySelector('#btn-snapshot');
+    const audioLabel = document.querySelector('.audio-label');
 
     if (navSolar) navSolar.textContent = tr.navSolar;
+    if (navTour) navTour.textContent = tr.navTour;
+    if (navTheater) navTheater.textContent = tr.navScaleTheater;
     if (navKepler) navKepler.textContent = tr.navKepler;
     if (navExp) navExp.textContent = tr.navExperiments;
     if (navId) navId.textContent = tr.navIndonesia;
     if (navQuiz) navQuiz.textContent = tr.navQuiz;
     if (helpBtn) helpBtn.textContent = tr.navGuide;
+    if (snapBtn) snapBtn.textContent = tr.btnSnapshot;
+    if (audioLabel) audioLabel.textContent = tr.btnAudio;
 
     // Update Select Dropdowns
     const levelSelect = document.querySelector('#select-curriculum-level') as HTMLSelectElement;
@@ -386,12 +476,20 @@ export class App {
     // Update View Toggles
     const orbitSpan = document.querySelector('#label-toggle-orbits');
     const astSpan = document.querySelector('#label-toggle-asteroids');
+    const comSpan = document.querySelector('#label-toggle-comets');
+    const conSpan = document.querySelector('#label-toggle-constellations');
+    const spcSpan = document.querySelector('#label-toggle-spacecraft');
     const gravSpan = document.querySelector('#label-toggle-gravity');
     const topBtn = document.querySelector('#btn-camera-top');
+    const domeBtn = document.querySelector('#btn-camera-dome');
     if (orbitSpan) orbitSpan.textContent = tr.toggleOrbits;
     if (astSpan) astSpan.textContent = tr.toggleAsteroids;
+    if (comSpan) comSpan.textContent = tr.toggleComets;
+    if (conSpan) conSpan.textContent = tr.toggleConstellations;
+    if (spcSpan) spcSpan.textContent = tr.toggleSpacecraft;
     if (gravSpan) gravSpan.textContent = tr.toggleGravityField;
     if (topBtn) topBtn.textContent = tr.toggleTopView;
+    if (domeBtn) domeBtn.textContent = tr.toggleSkyDomeView;
 
     // Refresh UI Components
     this.infoPanel.refreshLanguage();
@@ -402,6 +500,8 @@ export class App {
     this.scaleControls.refreshLanguage();
     this.welcomeModal.refreshLanguage();
     this.searchExplorer.refreshLanguage();
+    this.cinematicTour.refreshLanguage();
+    this.comparisonStage.refreshLanguage();
   }
 
   /**
@@ -412,14 +512,44 @@ export class App {
     const btnLangId = document.querySelector('#btn-lang-id');
     const btnLangEn = document.querySelector('#btn-lang-en');
     if (btnLangId) {
-      btnLangId.addEventListener('click', () => this.switchLanguage('id'));
+      btnLangId.addEventListener('click', () => {
+        this.audio.playUiClick();
+        this.switchLanguage('id');
+      });
     }
     if (btnLangEn) {
-      btnLangEn.addEventListener('click', () => this.switchLanguage('en'));
+      btnLangEn.addEventListener('click', () => {
+        this.audio.playUiClick();
+        this.switchLanguage('en');
+      });
+    }
+
+    // Audio Mute Toggle Button
+    const audioBtn = document.querySelector('#btn-audio-toggle');
+    if (audioBtn) {
+      audioBtn.addEventListener('click', () => {
+        const isMuted = this.audio.toggleMute();
+        audioBtn.classList.toggle('active', !isMuted);
+        const icon = audioBtn.querySelector('.audio-icon');
+        if (icon) icon.textContent = isMuted ? '🔇' : '🔊';
+      });
+    }
+
+    // 4K Snapshot Button
+    const snapBtn = document.querySelector('#btn-snapshot');
+    if (snapBtn) {
+      snapBtn.addEventListener('click', () => {
+        this.audio.playUiClick();
+        SnapshotStudio.captureSnapshot(this.scene, this.simControls.simulationDate);
+      });
     }
 
     // 1. Scene Object Click
     this.scene.onSelectObject = (id, type) => {
+      // Audio flyby whoosh & planetary radio resonance
+      this.audio.playFlybyWhoosh();
+      this.audio.playPlanetaryRadio(id);
+
       // Auto-zoom smoothly and frame the selected body in full detail!
       this.scene.focusOn(id);
 
@@ -433,35 +563,49 @@ export class App {
         if (moon) {
           this.infoPanel.showMoon(moon, this.curriculumLevel, this.unitSystem);
         }
+      } else if (type === 'comet') {
+        const comet = getCometById(id);
+        if (comet) {
+          this.infoPanel.showComet(comet, this.curriculumLevel, this.unitSystem);
+        }
       }
     };
 
     // 2. Info Panel Actions
     this.infoPanel.onFocusClick = (id) => {
+      this.audio.playFlybyWhoosh();
+      this.audio.playPlanetaryRadio(id);
       this.scene.focusOn(id);
     };
     this.infoPanel.onFollowClick = (id) => {
+      this.audio.playFlybyWhoosh();
       this.scene.follow(id);
     };
     this.infoPanel.onViewSurfaceClick = (id) => {
+      this.audio.playUiClick();
       this.scene.viewFromSurface(id);
     };
     this.infoPanel.onSelectMoon = (moonId) => {
       const moon = getMoonById(moonId);
       if (moon) {
+        this.audio.playFlybyWhoosh();
         this.infoPanel.showMoon(moon, this.curriculumLevel, this.unitSystem);
         this.scene.focusOn(moonId);
       }
     };
     this.infoPanel.onClose = () => {
-      // Keep tracking and sunlight active when closing panel to admire the celestial view
+      this.audio.stopPlanetaryRadio();
     };
 
     // 3. Simulation Controls
     this.simControls.onPlayPauseToggle = (isPaused) => {
-      // simulation state updated
+      this.audio.playUiClick();
+    };
+    this.simControls.onSpeedChange = (speed) => {
+      this.audio.playSpeedShift(speed / 86400);
     };
     this.simControls.onResetSimulation = () => {
+      this.audio.playUiClick();
       this.engine.restore(this.initialPhysicsSnapshot);
       this.scene.cameraController.resetCamera(true);
       this.scene.disableFocusedLight();
@@ -470,16 +614,19 @@ export class App {
     this.simControls.onStepSimulation = (seconds) => {
       this.engine.update(seconds);
       this.simControls.advanceTime(seconds);
-      this.scene.solarSystem.syncWithPhysics(this.engine, 0.016, false);
+      this.scene.solarSystem.syncWithPhysics(this.engine, 0.016, false, seconds);
     };
 
     // 4. Scale Controls
     this.scaleControls.onScaleChange = (mode, customConfig) => {
+      this.audio.playUiClick();
       this.scene.solarSystem.setScaleMode(mode, customConfig);
     };
 
     // 5. Header Navigation
     const navSolar = document.querySelector('#nav-solar');
+    const navTour = document.querySelector('#nav-tour');
+    const navTheater = document.querySelector('#nav-theater');
     const navKepler = document.querySelector('#nav-kepler');
     const navExp = document.querySelector('#nav-exp');
     const navId = document.querySelector('#nav-id');
@@ -494,18 +641,56 @@ export class App {
 
     if (navSolar) {
       navSolar.addEventListener('click', () => {
+        this.audio.playUiClick();
         this.keplerLab.hide();
         this.experimentPanel.hide();
         this.indonesiaPanel.hide();
+        this.comparisonStage.hide();
+        this.cinematicTour.stop();
         updateNavActive(navSolar);
       });
     }
 
-    if (brandHome) {
-      brandHome.addEventListener('click', () => {
+    if (navTour) {
+      navTour.addEventListener('click', () => {
+        this.audio.playUiClick();
         this.keplerLab.hide();
         this.experimentPanel.hide();
         this.indonesiaPanel.hide();
+        this.comparisonStage.hide();
+        this.cinematicTour.start();
+        updateNavActive(navTour);
+      });
+    }
+
+    this.cinematicTour.onTourEnd = () => {
+      updateNavActive(navSolar);
+    };
+
+    if (navTheater) {
+      navTheater.addEventListener('click', () => {
+        this.audio.playUiClick();
+        this.keplerLab.hide();
+        this.experimentPanel.hide();
+        this.indonesiaPanel.hide();
+        this.cinematicTour.stop();
+        this.comparisonStage.show();
+        updateNavActive(navTheater);
+      });
+    }
+
+    this.comparisonStage.onClose = () => {
+      updateNavActive(navSolar);
+    };
+
+    if (brandHome) {
+      brandHome.addEventListener('click', () => {
+        this.audio.playUiClick();
+        this.keplerLab.hide();
+        this.experimentPanel.hide();
+        this.indonesiaPanel.hide();
+        this.comparisonStage.hide();
+        this.cinematicTour.stop();
         this.scene.cameraController.resetCamera(true);
         this.scene.disableFocusedLight();
         this.scene.solarSystem.selectBody(null);
@@ -515,8 +700,11 @@ export class App {
 
     if (navKepler) {
       navKepler.addEventListener('click', () => {
+        this.audio.playUiClick();
         this.experimentPanel.hide();
         this.indonesiaPanel.hide();
+        this.comparisonStage.hide();
+        this.cinematicTour.stop();
         this.keplerLab.show();
         updateNavActive(navKepler);
       });
@@ -524,8 +712,11 @@ export class App {
 
     if (navExp) {
       navExp.addEventListener('click', () => {
+        this.audio.playUiClick();
         this.keplerLab.hide();
         this.indonesiaPanel.hide();
+        this.comparisonStage.hide();
+        this.cinematicTour.stop();
         this.experimentPanel.show();
         updateNavActive(navExp);
       });
@@ -588,6 +779,12 @@ export class App {
           this.infoPanel.showMoon(moon, this.curriculumLevel, this.unitSystem);
           this.scene.focusOn(res.id);
         }
+      } else if (res.type === 'comet') {
+        const comet = getCometById(res.id);
+        if (comet) {
+          this.infoPanel.showComet(comet, this.curriculumLevel, this.unitSystem);
+          this.scene.focusOn(res.id);
+        }
       } else if (res.type === 'experiment') {
         this.experimentPanel.show(res.id);
         updateNavActive(navExp);
@@ -607,6 +804,10 @@ export class App {
 
     this.experimentPanel.onResetExperiment = () => {
       this.engine.restore(this.initialPhysicsSnapshot);
+      if (this.scene.solarSystem.blackHole) {
+        this.scene.solarSystem.group.remove(this.scene.solarSystem.blackHole.group);
+        this.scene.solarSystem.blackHole = undefined;
+      }
     };
 
     // 10. Add Sandbox Body
@@ -704,6 +905,27 @@ export class App {
         color: '#ff6b6b'
       });
       this.engine.addBody(ast);
+    } else if (expId === 'black-hole-encounter') {
+      const mSolar = params.blackHoleMass ?? 3.0;
+      const distAU = params.encounterDist ?? 15.0;
+      const vKms = params.flybySpeed ?? 25.0;
+      const rMeters = distAU * AU;
+      const vMs = vKms * 1000;
+
+      const bhBody = new Body({
+        id: `blackhole-${Date.now()}`,
+        name: 'Rogue Stellar Black Hole',
+        indonesianName: 'Lubang Hitam Bintang Pengembara',
+        type: 'star',
+        mass: mSolar * SOLAR_MASS,
+        radius: 10000,
+        position: new PhysVector3(rMeters, 0, -rMeters * 0.8),
+        velocity: new PhysVector3(-vMs * 0.7, 0, vMs * 0.7),
+        color: '#00f0ff'
+      });
+      this.engine.addBody(bhBody);
+      const sceneScale = this.scene.solarSystem.scaleConfig.distanceScale;
+      this.scene.solarSystem.addBlackHole(new THREE.Vector3(rMeters * sceneScale, 0, -rMeters * 0.8 * sceneScale));
     }
   }
 
@@ -723,7 +945,7 @@ export class App {
         this.simControls.advanceTime(deltaSimSeconds);
 
         // 3. Synchronize 3D visuals
-        this.scene.solarSystem.syncWithPhysics(this.engine, deltaRealSec, false);
+        this.scene.solarSystem.syncWithPhysics(this.engine, deltaRealSec, false, deltaSimSeconds);
 
         // 4. Update live energy readouts if info panel is open
         const selectedId = this.scene.solarSystem.getSelectedBodyId();
@@ -735,7 +957,7 @@ export class App {
         }
       } else {
         // When paused, still update selection ring animation & gentle visual idle
-        this.scene.solarSystem.syncWithPhysics(this.engine, deltaRealSec, true);
+        this.scene.solarSystem.syncWithPhysics(this.engine, deltaRealSec, true, 0);
       }
     });
   }

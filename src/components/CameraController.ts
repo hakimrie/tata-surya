@@ -34,7 +34,7 @@ export class CameraController {
     this.controls.dampingFactor = 0.05;
     this.controls.screenSpacePanning = true;
     this.controls.minDistance = 0.08;
-    this.controls.maxDistance = 10000;
+    this.controls.maxDistance = 25000;
     this.controls.maxPolarAngle = Math.PI - 0.01;
 
     this.resetCamera(false);
@@ -189,6 +189,20 @@ export class CameraController {
 
     const currentDist = this.camera.position.length();
     const destPos = new THREE.Vector3(0, Math.max(currentDist, 350), 0.001);
+    const destTarget = new THREE.Vector3(0, 0, 0);
+
+    this.startTransition(destPos, destTarget);
+  }
+
+  /**
+   * Set wide-angle panoramic view framing the entire celestial sky dome and constellations
+   */
+  setConstellationOverview(): void {
+    this.mode = 'free';
+    this.targetObject = null;
+
+    // Harmonious panoramic vantage point framing the 1200-radius celestial dome
+    const destPos = new THREE.Vector3(0, 950, 1600);
     const destTarget = new THREE.Vector3(0, 0, 0);
 
     this.startTransition(destPos, destTarget);

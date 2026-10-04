@@ -525,6 +525,77 @@ $$\\rho(h) = \\rho_0 e^{-h / H}$$
 
 Stasiun Luar Angkasa Internasional (ISS) yang berada di ketinggian ~410 km kehilangan ketinggian sekitar 100 meter setiap hari dan harus secara berkala menyalakan pendorong roket (*re-boost*) untuk menaikkan orbitnya kembali!
     `
+  },
+
+  {
+    id: 'black-hole-encounter',
+    title: '9. Pertemuan Gravitasi Lubang Hitam Pengembara',
+    titleEn: 'Rogue Black Hole Gravitational Encounter',
+    icon: '🕳️',
+    curriculumCategory: 'Hukum Newton & Gravitasi',
+    objective: 'Menyimulasikan bagaimana benda bermassa luar biasa padat (Lubang Hitam Bermassa Bintang) dapat mengganggu stabilitas orbit planet-planet di Tata Surya melalui tarikan gravitasi pasang surut (tidal forces).',
+    predictionQuestion: {
+      question: 'Jika sebuah lubang hitam bermassa 3 kali massa Matahari melintas dekat Jupiter dan Saturnus, apa dampak yang paling mungkin terjadi pada planet-planet tersebut?',
+      options: [
+        {
+          text: 'Planet-planet tidak akan terpengaruh sama sekali karena lubang hitam tidak memancarkan cahaya.',
+          isCorrect: false,
+          feedback: 'Keliru. Gravitasi tidak bergantung pada emisi cahaya, melainkan semata-mata pada massa objek dan jaraknya.'
+        },
+        {
+          text: 'Orbit planet akan mengalami gangguan (perturbasi) besar, eksentrisitas melonjak, bahkan beberapa planet dapat terlempar keluar dari Tata Surya.',
+          isCorrect: true,
+          feedback: 'Tepat sekali! Gaya gravitasi lubang hitam yang masif akan mematahkan keterikatan orbit Keplerian reguler dan mengubahnya menjadi lintasan kacau (*chaotic orbital resonance*).'
+        }
+      ]
+    },
+    sliders: [
+      {
+        id: 'blackHoleMass',
+        name: 'Massa Lubang Hitam (Massa Matahari)',
+        nameEn: 'Black Hole Mass (Solar Masses)',
+        min: 1.0,
+        max: 8.0,
+        step: 0.5,
+        defaultValue: 3.0,
+        unit: 'M☉',
+        description: 'Kelipatan massa Matahari dari lubang hitam pengembara yang melintas.'
+      },
+      {
+        id: 'encounterDist',
+        name: 'Jarak Terdekat Lintasan (Periastron)',
+        nameEn: 'Closest Approach Distance',
+        min: 8.0,
+        max: 40.0,
+        step: 2.0,
+        defaultValue: 15.0,
+        unit: 'AU',
+        description: 'Jarak terdekat sumbu lintasan lubang hitam ke Matahari saat melintas.'
+      },
+      {
+        id: 'flybySpeed',
+        name: 'Kecepatan Melintas Lubang Hitam',
+        nameEn: 'Flyby Speed',
+        min: 15.0,
+        max: 50.0,
+        step: 5.0,
+        defaultValue: 25.0,
+        unit: 'km/s',
+        description: 'Kecepatan hiperbolik lubang hitam relatif terhadap pusat Tata Surya.'
+      }
+    ],
+    observationPoints: [
+      'Amati bagaimana cakram akresi dan bayangan lubang hitam melintasi ruang angkasa antarbintang.',
+      'Perhatikan bagaimana planet luar (Jupiter, Saturnus, Uranus, Neptunus) terbelokkan jalurnya.',
+      'Perhatikan bagaimana medan gravitasi total Tata Surya bergeser ke arah barycenter gabungan Matahari dan lubang hitam.'
+    ],
+    explanation: `
+Lubang hitam bermassa bintang (*stellar-mass black hole*) terbentuk dari ledakan supernova bintang masif ($M > 20 M_\\odot$).
+Meskipun massanya beberapa kali lipat Matahari kita, radius cakrawala peristiwanya (*event horizon* / radius Schwarzschild) sangat kecil:
+$$r_s = \\frac{2GM}{c^2}$$
+Untuk lubang hitam bermassa $3 M_\\odot$, radius Schwarzschild-nya hanyalah sekitar **8,9 kilometer**!
+Ketika melintas di ruang angkasa, tarikan gravitasi Newton-nya bekerja persis seperti benda masif lainnya pada jarak jauh, namun kelengkungan ruang-waktu di dekatnya menciptakan cakram akresi bercahaya dan efek lensa gravitasi (*gravitational lensing*).
+    `
   }
 ];
 

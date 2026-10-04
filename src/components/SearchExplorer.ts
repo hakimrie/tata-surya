@@ -1,11 +1,12 @@
 import { PLANETS_DATA } from '../data/planets';
 import { MOONS_DATA } from '../data/moons';
+import { COMETS_DATA } from '../data/comets';
 import { EXPERIMENTS } from '../data/experiments';
 import { t, getLanguage } from '../utils/i18n';
 
 export interface SearchResult {
   id: string;
-  type: 'planet' | 'moon' | 'experiment' | 'indonesia' | 'concept';
+  type: 'planet' | 'moon' | 'comet' | 'experiment' | 'indonesia' | 'concept';
   title: string;
   subtitle: string;
   category: string;
@@ -127,7 +128,27 @@ export class SearchExplorer {
       }
     }
 
-    // 3. Search Guided Experiments
+    // 3. Search Comets
+    for (const c of COMETS_DATA) {
+      if (
+        c.name.toLowerCase().includes(q) ||
+        c.indonesianName.toLowerCase().includes(q) ||
+        c.englishName.toLowerCase().includes(q) ||
+        c.overview.toLowerCase().includes(q) ||
+        (c.overviewEn && c.overviewEn.toLowerCase().includes(q))
+      ) {
+        list.push({
+          id: c.id,
+          type: 'comet',
+          title: isEn ? c.englishName : c.indonesianName,
+          subtitle: isEn ? `Periodic Comet (e = ${c.eccentricity})` : `Komet Periodik (e = ${c.eccentricity})`,
+          category: isEn ? 'Periodic Comet' : 'Komet Periodik',
+          icon: '☄️'
+        });
+      }
+    }
+
+    // 4. Search Guided Experiments
     for (const exp of EXPERIMENTS) {
       if (
         exp.title.toLowerCase().includes(q) ||

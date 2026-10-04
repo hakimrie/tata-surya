@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PlanetData } from '../data/planets';
 import { TextureGenerator } from '../utils/textureGenerator';
+import { AtmosphereGlow } from '../effects/AtmosphereGlow';
 
 export class Planet {
   public data: PlanetData;
@@ -80,30 +81,28 @@ export class Planet {
   }
 
   private createSunCorona(radius: number): void {
-    const coronaGeo = new THREE.SphereGeometry(radius * 1.25, 32, 32);
+    // Soft, luminous solar limb halo
+    const coronaGeo = new THREE.SphereGeometry(radius * 1.18, 32, 32);
     const coronaMat = new THREE.MeshBasicMaterial({
-      color: 0xff9900,
+      color: 0xffaa00,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.26,
       blending: THREE.AdditiveBlending,
       side: THREE.BackSide
     });
     const corona = new THREE.Mesh(coronaGeo, coronaMat);
     this.group.add(corona);
-
-    // Secondary soft outer glow
-    const outerCoronaGeo = new THREE.SphereGeometry(radius * 1.5, 32, 32);
-    const outerCoronaMat = new THREE.MeshBasicMaterial({
-      color: 0xff5500,
-      transparent: true,
-      opacity: 0.15,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide
-    });
-    this.group.add(new THREE.Mesh(outerCoronaGeo, outerCoronaMat));
   }
 
   private createAtmosphere(radius: number, colorHex: string): void {
+    // Try photorealistic Fresnel atmospheric limb glow shader
+    const customGlow = AtmosphereGlow.createAtmosphereMesh(this.data.id, radius);
+    if (customGlow) {
+      this.atmosphereMesh = customGlow;
+      this.tiltGroup.add(this.atmosphereMesh);
+      return;
+    }
+
     const atmosGeo = new THREE.SphereGeometry(radius * 1.05, 32, 32);
     const atmosMat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(colorHex),

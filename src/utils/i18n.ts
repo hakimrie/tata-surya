@@ -16,6 +16,10 @@ export interface Translations {
   navExperiments: string;
   navIndonesia: string;
   navQuiz: string;
+  navTour: string;
+  navScaleTheater: string;
+  btnSnapshot: string;
+  btnAudio: string;
   navGuide: string;
   levelPrefix: string;
   unitPrefix: string;
@@ -26,6 +30,10 @@ export interface Translations {
   toggleAsteroids: string;
   toggleGravityField: string;
   toggleTopView: string;
+  toggleSkyDomeView: string;
+  toggleConstellations: string;
+  toggleComets: string;
+  toggleSpacecraft: string;
 
   // Simulation Controls
   simTimeBadge: string;
@@ -198,15 +206,23 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     navExperiments: '🚀 Eksperimen & Sandbox',
     navIndonesia: '🇮🇩 Indonesia & Antariksa',
     navQuiz: '🎯 Kuis',
+    navTour: '🚀 Tur Sinematik',
+    navScaleTheater: '📏 Teater Skala',
+    btnSnapshot: '📸 Foto 4K',
+    btnAudio: '🔊 Musik Kosmis',
     navGuide: '❓ Panduan',
     levelPrefix: 'Tingkat',
     unitPrefix: 'Satuan',
-    searchPlaceholder: 'Cari planet, bulan, konsep gravitasi, Palapa, Bosscha...',
+    searchPlaceholder: 'Cari planet, komet Halley, konsep gravitasi, Palapa...',
 
     toggleOrbits: 'Garis Orbit',
     toggleAsteroids: 'Sabuk Asteroid',
     toggleGravityField: 'Medan Gravitasi',
-    toggleTopView: '👁️ Pandangan Atas (Top 2D)',
+    toggleTopView: '👁️ Pandangan Atas (2D)',
+    toggleSkyDomeView: '🔭 Kubah Langit (360°)',
+    toggleConstellations: '⭐ Rasi Bintang & Pari',
+    toggleComets: '☄️ Komet Halley & Neowise',
+    toggleSpacecraft: '🛰️ Wahana Antariksa',
 
     simTimeBadge: 'WAKTU SIMULASI',
     rk4Stable: '● RK4 Stabil',
@@ -371,15 +387,23 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     navExperiments: '🚀 Experiments & Sandbox',
     navIndonesia: '🇮🇩 Indonesia & Space',
     navQuiz: '🎯 Quiz',
+    navTour: '🚀 Cinematic Tour',
+    navScaleTheater: '📏 Scale Theater',
+    btnSnapshot: '📸 4K Snapshot',
+    btnAudio: '🔊 Cosmic Sound',
     navGuide: '❓ Guide',
     levelPrefix: 'Level',
     unitPrefix: 'Units',
-    searchPlaceholder: 'Search planets, moons, gravity concepts, Palapa, Bosscha...',
+    searchPlaceholder: 'Search planets, Halley comet, gravity concepts, Palapa...',
 
     toggleOrbits: 'Orbit Paths',
     toggleAsteroids: 'Asteroid Belt',
     toggleGravityField: 'Gravity Field',
     toggleTopView: '👁️ Ecliptic Top (2D)',
+    toggleSkyDomeView: '🔭 Sky Dome View (360°)',
+    toggleConstellations: '⭐ Constellations & Crux',
+    toggleComets: '☄️ Comets (Halley & Neowise)',
+    toggleSpacecraft: '🛰️ Historic Spacecraft',
 
     simTimeBadge: 'SIMULATION TIME',
     rk4Stable: '● RK4 Stable',
