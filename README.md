@@ -2,6 +2,8 @@
 
 Aplikasi simulasi 3D Tata Surya dan laboratorium gravitasi interaktif berbahasa Indonesia yang dirancang khusus untuk siswa **SD, SMP, SMA/SMK**, dan mahasiswa pengantar fisika/astronomi. Menggabungkan akurasi fisika numerik **Runge-Kutta Orde ke-4 (RK4)** dengan visualisasi WebGL modern via **Three.js** dan **Vite + TypeScript**.
 
+🌐 **Live Demo & Koleksi Eksperimen**: [https://experiment.bukuanak.id/](https://experiment.bukuanak.id/)
+
 ![Tata Surya 3D](https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80)
 
 ---

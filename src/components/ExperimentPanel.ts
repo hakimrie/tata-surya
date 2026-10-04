@@ -92,6 +92,20 @@ export class ExperimentPanel {
         </button>
       </div>
 
+      <!-- Portal Link Banner -->
+      <div class="exp-portal-banner">
+        <div class="exp-portal-info">
+          <span class="exp-portal-icon">🧪</span>
+          <div>
+            <strong>${isEn ? 'Explore All Experiments' : 'Jelajahi Semua Eksperimen'}</strong>
+            <p>${isEn ? 'Discover more interactive simulations on Buku Anak' : 'Kunjungi portal eksperimen Buku Anak untuk simulasi sains lainnya'}</p>
+          </div>
+        </div>
+        <a href="https://experiment.bukuanak.id/" class="exp-portal-btn" target="_blank" rel="noopener noreferrer">
+          experiment.bukuanak.id ↗
+        </a>
+      </div>
+
       <div class="exp-body-content">
         ${this.currentMode === 'guided' ? this.renderGuidedView() : this.renderSandboxView()}
       </div>

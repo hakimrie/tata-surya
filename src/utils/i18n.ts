@@ -9,6 +9,8 @@ export interface Translations {
   // Brand & Header
   appTitle: string;
   appSubtitle: string;
+  navAllExperiments: string;
+  navAllExperimentsTitle: string;
   navSolar: string;
   navKepler: string;
   navExperiments: string;
@@ -189,6 +191,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   id: {
     appTitle: 'TATA SURYA 3D',
     appSubtitle: 'Simulasi & Sandbox Gravitasi Edukasi',
+    navAllExperiments: 'Semua Eksperimen',
+    navAllExperimentsTitle: 'Jelajahi semua eksperimen interaktif di experiment.bukuanak.id',
     navSolar: '🪐 Tata Surya 3D',
     navKepler: '📐 Lab Kepler',
     navExperiments: '🚀 Eksperimen & Sandbox',
@@ -360,6 +364,8 @@ export const TRANSLATIONS: Record<Language, Translations> = {
   en: {
     appTitle: '3D SOLAR SYSTEM',
     appSubtitle: 'Educational Simulation & Gravity Sandbox',
+    navAllExperiments: 'All Experiments',
+    navAllExperimentsTitle: 'Explore all interactive experiments at experiment.bukuanak.id',
     navSolar: '🪐 3D Solar System',
     navKepler: '📐 Kepler Lab',
     navExperiments: '🚀 Experiments & Sandbox',

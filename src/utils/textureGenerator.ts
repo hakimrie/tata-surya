@@ -11,6 +11,12 @@ export class TextureGenerator {
       return this.cache.get(type)!;
     }
 
+    if (typeof document === 'undefined') {
+      const dummy = new THREE.Texture();
+      this.cache.set(type, dummy);
+      return dummy;
+    }
+
     let texture: THREE.Texture;
     switch (type) {
       case 'sun':

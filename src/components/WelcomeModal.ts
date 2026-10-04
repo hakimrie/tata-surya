@@ -115,6 +115,13 @@ export class WelcomeModal {
             ${tr.btnStartExploring}
           </button>
         </div>
+
+        <div class="welcome-portal-footer">
+          <span>${isEn ? 'Part of interactive educational simulations collection at' : 'Bagian dari kumpulan simulasi sains interaktif di'}</span>
+          <a href="https://experiment.bukuanak.id/" class="welcome-portal-link" target="_blank" rel="noopener noreferrer">
+            experiment.bukuanak.id ↗
+          </a>
+        </div>
       </div>
     `;
   }

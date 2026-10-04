@@ -411,13 +411,62 @@ export class SolarSystem {
       // Base offset at 2.65 ensures Enceladus is just outside rings (3.4x),
       // and Titan orbits clearly outside (4.4x).
       visualMultiplier = 2.65 + 0.38 * sqrtX;
+    } else if (parent.data.id === 'earth') {
+      // Earth's moon is physically distant (60 Earth radii), while Venus is our closest
+      // planetary neighbor (only ~1.38 scene units away). Setting visualMultiplier ~1.70
+      // gives a visual orbit radius of ~0.68: clearly outside Earth (0.40) while keeping
+      // a wide, safe clearance (~0.70 units) from Venus to prevent any collision or overlap.
+      visualMultiplier = 1.70;
     } else {
       // Non-ringed planets: 1.35x + 0.35 * sqrt(x)
       visualMultiplier = 1.35 + 0.35 * sqrtX;
     }
 
     const orbitMultiplier = this.scaleConfig.moonOrbitScale / 18;
-    return parentR * visualMultiplier * orbitMultiplier;
+    let orbitR = parentR * visualMultiplier * orbitMultiplier;
+
+    // Astronomical Hill-Sphere / Planetary Clearance Protection:
+    // Ensure moon's orbit never expands into neighboring planets' orbital paths,
+    // even if scale sliders (moonOrbitScale or planetSizeScale) are adjusted in custom mode.
+    const parentIndex = PLANETS_DATA.findIndex(p => p.id === parent.data.id);
+    if (parentIndex !== -1) {
+      const innerNeighbor = PLANETS_DATA[parentIndex - 1];
+      const outerNeighbor = PLANETS_DATA[parentIndex + 1];
+      let minNeighborGap = Infinity;
+      let closestNeighborVisualR = 0.4;
+
+      if (innerNeighbor && innerNeighbor.type !== 'star') {
+        const gap = (parent.data.semiMajorAxis - innerNeighbor.semiMajorAxis) * this.scaleConfig.distanceScale;
+        const neighborPlanet = this.planets.get(innerNeighbor.id);
+        const nVisualR = neighborPlanet ? neighborPlanet.visualRadius : 0.4;
+        if (gap > 0 && gap < minNeighborGap) {
+          minNeighborGap = gap;
+          closestNeighborVisualR = nVisualR;
+        }
+      }
+
+      if (outerNeighbor) {
+        const gap = (outerNeighbor.semiMajorAxis - parent.data.semiMajorAxis) * this.scaleConfig.distanceScale;
+        const neighborPlanet = this.planets.get(outerNeighbor.id);
+        const nVisualR = neighborPlanet ? neighborPlanet.visualRadius : 0.4;
+        if (gap > 0 && gap < minNeighborGap) {
+          minNeighborGap = gap;
+          closestNeighborVisualR = nVisualR;
+        }
+      }
+
+      if (minNeighborGap !== Infinity) {
+        const moonVisualR = this.computeMoonVisualRadius(m);
+        // Safe ceiling: maintain clear separation from neighboring planet's body and orbit
+        const safeMaxOrbitR = Math.max(
+          parentR + moonVisualR + 0.05,
+          minNeighborGap - closestNeighborVisualR - moonVisualR - 0.15
+        );
+        orbitR = Math.min(orbitR, safeMaxOrbitR);
+      }
+    }
+
+    return orbitR;
   }
 
   public setOrbitLinesVisible(visible: boolean): void {

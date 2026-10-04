@@ -187,13 +187,21 @@ export class App {
       <div class="header-brand" id="btn-brand-home" title="${isEn ? 'Return to Solar System' : 'Kembali ke Tata Surya'}">
         <span class="brand-icon">🌞</span>
         <div>
-          <h1 class="brand-title">${tr.appTitle}</h1>
+          <div class="brand-title-row">
+            <h1 class="brand-title">${tr.appTitle}</h1>
+            <a href="https://experiment.bukuanak.id/" class="brand-portal-pill" id="link-brand-portal" title="${tr.navAllExperimentsTitle}" onclick="event.stopPropagation()">
+              experiment.bukuanak.id ↗
+            </a>
+          </div>
           <span class="brand-subtitle">${tr.appSubtitle}</span>
         </div>
       </div>
 
       <!-- App Mode Navigation -->
       <nav class="header-nav" role="navigation">
+        <a href="https://experiment.bukuanak.id/" class="nav-btn nav-btn-portal" id="nav-all-experiments" title="${tr.navAllExperimentsTitle}">
+          🧪 <span class="nav-portal-label">${tr.navAllExperiments}</span> ↗
+        </a>
         <button class="nav-btn active" id="nav-solar" title="${tr.navSolar}">
           ${tr.navSolar}
         </button>
@@ -333,8 +341,15 @@ export class App {
     const brandSub = document.querySelector('.brand-subtitle');
     if (brandTitle) brandTitle.textContent = tr.appTitle;
     if (brandSub) brandSub.textContent = tr.appSubtitle;
+    const brandPortalLink = document.querySelector('#link-brand-portal') as HTMLAnchorElement;
+    if (brandPortalLink) brandPortalLink.title = tr.navAllExperimentsTitle;
 
     // Update Nav Buttons
+    const navAllExp = document.querySelector('#nav-all-experiments .nav-portal-label');
+    const navAllExpLink = document.querySelector('#nav-all-experiments') as HTMLAnchorElement;
+    if (navAllExp) navAllExp.textContent = tr.navAllExperiments;
+    if (navAllExpLink) navAllExpLink.title = tr.navAllExperimentsTitle;
+
     const navSolar = document.querySelector('#nav-solar');
     const navKepler = document.querySelector('#nav-kepler');
     const navExp = document.querySelector('#nav-exp');

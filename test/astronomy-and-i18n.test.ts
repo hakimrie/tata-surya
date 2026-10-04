@@ -85,6 +85,8 @@ describe('Internationalization (i18n) Engine', () => {
       const dict = t();
       expect(dict.appTitle).toBeTruthy();
       expect(dict.appSubtitle).toBeTruthy();
+      expect(dict.navAllExperiments).toBeTruthy();
+      expect(dict.navAllExperimentsTitle).toBeTruthy();
       expect(dict.navSolar).toBeTruthy();
       expect(dict.navKepler).toBeTruthy();
       expect(dict.navExperiments).toBeTruthy();
@@ -127,5 +129,62 @@ describe('Asteroid Belt Proportions & Scaling', () => {
     expect(ceresRadiusKm).toBeLessThan(mercury.radius / 1000);
     expect(vestaRadiusKm).toBeLessThan(ceresRadiusKm);
     expect(ceresRadiusKm).toBeLessThan(earth.radius / 1000);
+  });
+});
+
+describe('Moon Orbit Scaling & Collision Prevention', () => {
+  it('prevents Earth Moon from colliding with Venus in Visual Mode', async () => {
+    const { SolarSystem } = await import('../src/components/SolarSystem');
+    const solarSystem = new SolarSystem();
+
+    const earthMoon = solarSystem.moons.get('moon')!;
+    expect(earthMoon).toBeDefined();
+
+    const earthPlanet = solarSystem.planets.get('earth')!;
+    const venusPlanet = solarSystem.planets.get('venus')!;
+    expect(earthPlanet).toBeDefined();
+    expect(venusPlanet).toBeDefined();
+
+    const moonOrbitR = solarSystem.computeMoonVisualOrbitRadius(earthMoon.data);
+    const moonVisualR = solarSystem.computeMoonVisualRadius(earthMoon.data);
+    const earthVisualR = earthPlanet.visualRadius;
+    const venusVisualR = venusPlanet.visualRadius;
+
+    // 1. Moon must orbit clearly outside Earth's surface
+    expect(moonOrbitR).toBeGreaterThan(earthVisualR + moonVisualR);
+
+    // 2. Distance between Earth and Venus orbit paths
+    const distScale = solarSystem.scaleConfig.distanceScale;
+    const earthVenusGap = (earthPlanet.data.semiMajorAxis - venusPlanet.data.semiMajorAxis) * distScale;
+
+    // 3. Moon orbit radius must be strictly less than the gap to Venus
+    expect(moonOrbitR).toBeLessThan(earthVenusGap);
+
+    // 4. Moon and Venus surfaces must maintain a positive clearance at closest conjunction
+    const clearanceToVenus = earthVenusGap - moonOrbitR - venusVisualR - moonVisualR;
+    expect(clearanceToVenus).toBeGreaterThan(0.1);
+  });
+
+  it('maintains safe clearance even when moon orbit scale slider is set to maximum', async () => {
+    const { SolarSystem } = await import('../src/components/SolarSystem');
+    const solarSystem = new SolarSystem();
+    const earthMoon = solarSystem.moons.get('moon')!;
+    const earthPlanet = solarSystem.planets.get('earth')!;
+    const venusPlanet = solarSystem.planets.get('venus')!;
+
+    // Set custom mode with maximum moon orbit scale (54)
+    solarSystem.setScaleMode('custom', {
+      moonOrbitScale: 54
+    });
+
+    const moonOrbitR = solarSystem.computeMoonVisualOrbitRadius(earthMoon.data);
+    const moonVisualR = solarSystem.computeMoonVisualRadius(earthMoon.data);
+    const venusVisualR = venusPlanet.visualRadius;
+    const distScale = solarSystem.scaleConfig.distanceScale;
+    const earthVenusGap = (earthPlanet.data.semiMajorAxis - venusPlanet.data.semiMajorAxis) * distScale;
+
+    // Planetary clearance guard must clamp orbit so clearance is still maintained
+    const clearanceToVenus = earthVenusGap - moonOrbitR - venusVisualR - moonVisualR;
+    expect(clearanceToVenus).toBeGreaterThan(0.1);
   });
 });
